@@ -1,0 +1,15 @@
+{
+  "name": "semicolons",
+  "version": "0.1.0",
+  "description": "Split Postgres SQL queries on semicolons",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "George MacKerron",
+  "license": "ISC",
+  "dependencies": {
+    "pg-query-parser": "^0.3.0",
+    "pgsql-parser": "^13.5.0"
+  }
+}
