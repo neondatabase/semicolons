@@ -119,6 +119,9 @@ function parseStatements(sql: string, standardConformingStrings: boolean) {
         }
         at += tagStr.length;
         break;
+
+      default:
+        throw new Error(`Assumptions violated`);
     }
   }
 }
@@ -280,10 +283,10 @@ function test() {
     `select "xyz"; -- OK`,
     `select "xyz"--OK`,
     `--OK\n\nselect "xyz"`,
-    `select--OK\n1--OK\n+2; select x;`,
+    `select--OK;\n1--;OK\n+2; select x;`,
 
     // multiline comments
-    `select/*/* ;;; */*/"xyz"; /* blah; */ select/***/"abc";/**/`,
+    `select/*/* ;;; */*/"xyz"; /* blah; */ select/***/"abc";/**//*;select 1*/`,
     `/* select "xyz"; */`,
     `/**/`,
     `/**/select'"--;/**/;--"'/**/--`,
