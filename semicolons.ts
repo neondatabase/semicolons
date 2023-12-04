@@ -11,7 +11,7 @@ const
   whitespaceThenSingleQuote = /\s*\n\s*'/y,
   newline = /[\s\S]*?\n/y,
   commentOpenOrClose = /[\s\S]*?([/][*]|[*][/])/y,
-  identifierChars = /[\p{L}\p{N}_$]/u,
+  trailingIdentifier = /(^|[^\p{L}\p{N}_])[\p{L}_][\p{L}\p{N}_$]*$/u,
   dollarTag = /([\p{L}_][\p{L}\p{N}_]*)?[$]/uy;
 
 function indexAfter(str: string, re: RegExp, from: number) {
@@ -101,14 +101,17 @@ function parseStatements(sql: string, standardConformingStrings: boolean) {
         break;
 
       case 36 /* $ */:
-        const chPrevStr = sql.charAt(atSpecial - 1);
-        if (identifierChars.test(chPrevStr)) break;  // $...$ strings can't immediately follow keyword/identifier characters because $ is legal in those
+        const 
+          priorSql = sql.slice(0, atSpecial),
+          priorIdentifier = trailingIdentifier.test(priorSql);
+        
+        if (priorIdentifier === true) break;  // $...$ strings can't immediately follow a keyword/identifier because $ is legal in those
 
-        const endTag = indexAfter(sql, dollarTag, at);
-        if (endTag === -1) break;  // not a valid open dollar-quote
+        const tagEnd = indexAfter(sql, dollarTag, at);
+        if (tagEnd === -1) break;  // not a valid open dollar-quote
 
-        const tagStr = sql.slice(atSpecial, endTag);
-        at = sql.indexOf(tagStr, endTag);
+        const tagStr = sql.slice(atSpecial, tagEnd);
+        at = sql.indexOf(tagStr, tagEnd);
         if (at === -1) {
           result.push(-1);
           return result;
@@ -245,7 +248,23 @@ function test() {
   check(`select $$abc;def$$;`);
   check(`select $$ab"c;d'ef$$;`);
   check(`select $end$ab"c;d'ef$end$;`);
-  check(`select $X_Y$\nab"c;d'ef\n$X_Y$; select $$/* \n--\n */$$; select $11$abc$11$;`);
+  check(`select $X_Y$\nab"c;d'ef\n$X_Y$; select 1;`);
+  check(`select $$/* \n--\n */$$; select $$$$;`);
+  check(`select $11$abc$11$; select 1;`);
+  check(`select $11+$abc$11+$abc$; select 1;`);
+  check(`select $1; select $a$; select $a$;`);
+  check(`select"$1";select'$1';select $1;`);
+  check(`select a$aaa$a;`);
+  check(`select a$$aaa$$a;`);
+  check(`select a$$$aaa$$$a;`);
+  check(`select $aaa$;`);
+  check(`select $$$$; select $$$$;`);
+  check(`select $$ $;$ $$;`);
+  check(`select $a$ $;$ $a$;`);
+  check(`select $xx$$xx$;`);
+  check(`select $xx$xx$xx$;`);
+  check(`create function x() returns int as $$ select 1; select 2; $$ language sql;`);
+  check(`create function x() returns int as $end$ select 1; select 2; $end$ language sql;`);
 
   // single-line comments
   check(`-- abc; def`);
@@ -253,7 +272,7 @@ function test() {
   check(`select "xyz"; -- OK`);
   check(`select "xyz"--OK`);
   check(`--OK\n\nselect "xyz"`);
-
+  
   // multiline comments
   check(`select/*/* ;;; */*/"xyz"; /* blah; */ select/***/"abc";/**/`);
   check(`/* select "xyz"; */`);
