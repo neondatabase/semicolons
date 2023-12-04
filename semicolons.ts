@@ -78,6 +78,7 @@ function parseStatements(sql: string, standardConformingStrings: boolean) {
         const singleCommentStart = atSpecial - 1;
         at = indexAfter(sql, newline, at);
         if (at === -1) at = sql.length;  // single-line comment extends to EOF
+        else at -= 1;  // retain newline to avoid syntax errors
         result.push([singleCommentStart, at]);
         break;
 
@@ -101,10 +102,10 @@ function parseStatements(sql: string, standardConformingStrings: boolean) {
         break;
 
       case 36 /* $ */:
-        const 
+        const
           priorSql = sql.slice(0, atSpecial),
           priorIdentifier = trailingIdentifier.test(priorSql);
-        
+
         if (priorIdentifier === true) break;  // $...$ strings can't immediately follow a keyword/identifier because $ is legal in those
 
         const tagEnd = indexAfter(sql, dollarTag, at);
@@ -126,7 +127,7 @@ function splitStatements(sql: string, cutComments: boolean, standardConformingSt
   const
     positions = parseStatements(sql, standardConformingStrings),
     length = positions.length;
-  
+
   if (positions[length - 1] === -1) return;  // if there were errors, return empty
   positions.push(sql.length);  // implicit semicolon at end
 
@@ -152,10 +153,7 @@ function splitStatements(sql: string, cutComments: boolean, standardConformingSt
   return statements;
 }
 
-test();
-
-function check(sql: string, x?: number) {
-
+function check(sql: string) {
   let
     parsed: any[] = [],
     error: any = undefined;
@@ -179,105 +177,118 @@ function check(sql: string, x?: number) {
 }
 
 function test() {
-  // empties
-  check(`;; ;;`);
-  check(` ;;; `);
+  [
+    // empties
+    `;; ;;`,
+    ` ;;; `,
 
-  // unterminated things
-  check(`"`);
-  check(`'`);
-  check(`/*`);
-  check(`select "`);
-  check(`update ' `);
-  check(`delete E' `);
-  check(`delete U&'hello" `);
-  check(`insert /*`);
-  check(`select "x`);
-  check(`update 'x`);
-  check(`insert /*x`);
-  check(`insert /*/* x */ y`);
-  check(`$$`);
-  check(`$$abc`);
-  check(`$tag$`);
-  check(`$tag$abc`);
-  check(`$$abc$`);
-  check(`$tag$abc$tag`);
-  check(`$tag$abc$TAG$`);
+    // unterminated things
+    `"`,
+    `'`,
+    `/*`,
+    ` "`,
+    ` '`,
+    ` /*`,
+    `" `,
+    `' `,
+    `/* `,
+    `select "`,
+    `update ' `,
+    `delete E' `,
+    `delete U&'hello" `,
+    `insert /*`,
+    `select "x`,
+    `update 'x`,
+    `insert /*x`,
+    `insert /*/* x */ y`,
+    `$$`,
+    `$$abc`,
+    `$tag$`,
+    `$tag$abc`,
+    `$$abc$`,
+    `$tag$abc$tag`,
+    `$tag$abc$TAG$`,
 
-  // simple, single-statement (no semi-colon)
-  check(`select "a"`);
-  check(`select"a"`);
-  check(`select 'a'`);
-  check(`select e'a'`);
-  check(`select E'a'`);
+    // simple, single-statement (no semi-colon)
+    `select "a"`,
+    `select"a"`,
+    `select 'a'`,
+    `select e'a'`,
+    `select E'a'`,
 
-  // nothing special
-  check(`select "a";`);
-  check(`select"a";`);
-  check(`select 'a';`);
-  check(`select e'a';`);
-  check(`select E'a';`);
-  check(`select "a"; select 1`);
-  check(`select"a"; select 1`);
-  check(`select 'a'; select "a"`);
-  check(`select e'a'; select ''`);
-  check(`select E'a'; select e''`);
+    // nothing special
+    `select "a";`,
+    `select"a";`,
+    `select 'a';`,
+    `select e'a';`,
+    `select E'a';`,
+    `select "a"; select 1`,
+    `select"a"; select 1`,
+    `select 'a'; select "a"`,
+    `select e'a'; select ''`,
+    `select E'a'; select e''`,
+    `select'a';select"a"`,
+    `select E'a';select e''`,
+    `\nselect'a';select"a"\n`,
 
-  // doubled quotes
-  check(`select "we ""love; quotes"; select 1`);
-  check(`select 'we ''love; quotes'; select 1`);
-  check(`select e'we ''love; quotes'; select 1`);
-  check(`select E'we ''love; quotes'; select 1`);
-  
-  // backslashed quotes
-  check(`select "we \\"love; quotes"; select 1;`);
-  check(`select 'we \\'love; quotes'; select 1`);
-  check(`select 'we \\'love; quotes'; select 1;`);
-  check(`select e'we \\'love; quotes'; select 1`);
-  check(`select E'we \\'love; quotes'; select 1;`);
+    // doubled quotes
+    `select "we ""love; quotes"; select 1`,
+    `select 'we ''love; quotes'; select 1`,
+    `select e'we ''love; quotes'; select 1`,
+    `select E'we ''love; ''q''uotes'; select 1`,
 
-  // run-on escaped strings
-  check(`select  'x' 'we \\'love quotes';  select 1;`);  // should error (actually illegal, but also no reason to allow backslash escape)
-  check(`select e'x' 'we \\'love quotes';select 1`);  // should error (actually illegal, but we treat as non-run-on, thus ordinary string)
-  check(`select E'x' 'we \\'love quotes' ;select 1`);  // should error, as above
-  check(`select 'x'\n 'we \\'love quotes'; select 1`);  // should error (run-on ordinary string)
-  check(`select e'x'\n 'we \\'love quotes'; select 1`);  // OK: run-on escape string
-  check(`select E'x'\n 'we \\'love quotes' ; select 1`);  // OK: ditto
+    // backslashed quotes
+    `select "we \\"love; quotes"; select 1;`,
+    `select 'we \\'love; quotes'; select 1`,
+    `select 'we \\'love; quotes'; select 1;`,
+    `select e'we \\'love; quotes'; select 1`,
+    `select E'we \\'love; quotes'; select 1;`,
 
-  // $$ strings
-  check(`select $$abc;def$$;`);
-  check(`select $$ab"c;d'ef$$;`);
-  check(`select $end$ab"c;d'ef$end$;`);
-  check(`select $X_Y$\nab"c;d'ef\n$X_Y$; select 1;`);
-  check(`select $$/* \n--\n */$$; select $$$$;`);
-  check(`select $11$abc$11$; select 1;`);
-  check(`select $11+$abc$11+$abc$; select 1;`);
-  check(`select $1; select $a$; select $a$;`);
-  check(`select"$1";select'$1';select $1;`);
-  check(`select a$aaa$a;`);
-  check(`select a$$aaa$$a;`);
-  check(`select a$$$aaa$$$a;`);
-  check(`select $aaa$;`);
-  check(`select $$$$; select $$$$;`);
-  check(`select $$ $;$ $$;`);
-  check(`select $a$ $;$ $a$;`);
-  check(`select $xx$$xx$;`);
-  check(`select $xx$xx$xx$;`);
-  check(`create function x() returns int as $$ select 1; select 2; $$ language sql;`);
-  check(`create function x() returns int as $end$ select 1; select 2; $end$ language sql;`);
+    // run-on escaped strings
+    `select  'x' 'we \\'love quotes';  select 1;`,  // should error (actually illegal, but also no reason to allow backslash escape,
+    `select e'x' 'we \\'love quotes';select 1`,  // should error (actually illegal, but we treat as non-run-on, thus ordinary string,
+    `select E'x' 'we \\'love quotes' ;select 1`,  // should error, as above
+    `select 'x'\n 'we \\'love quotes'; select 1`,  // should error (run-on ordinary string,
+    `select e'x'\n 'we \\'love quotes'; select 1`,  // OK: run-on escape string
+    `select E'x'\n 'we \\'love quotes' ; select 1`,  // OK: ditto
 
-  // single-line comments
-  check(`-- abc; def`);
-  check(`select "xyz"; -- OK \n select "abc";`);
-  check(`select "xyz"; -- OK`);
-  check(`select "xyz"--OK`);
-  check(`--OK\n\nselect "xyz"`);
-  
-  // multiline comments
-  check(`select/*/* ;;; */*/"xyz"; /* blah; */ select/***/"abc";/**/`);
-  check(`/* select "xyz"; */`);
-  check(`/**/`);
-  check(`/**/select'"--;/**/;--"'/**/--`);
+    // $$ strings
+    `select $$abc;def$$;`,
+    `select $$ab"c;d'ef$$;`,
+    `select $end$ab"c;d'ef$end$;`,
+    `select $X_Y$\nab"c;d'ef\n$X_Y$; select 1;`,
+    `select $$/* \n--\n */$$; select $$$$;`,
+    `select $11$abc$11$; select 1;`,
+    `select $11+$abc$11+$abc$; select 1;`,
+    `select $1; select $a$; select $a$;`,
+    `select"$1";select'$1';select $1;`,
+    `select a$aaa$a;`,
+    `select a$$aaa$$a;`,
+    `select a$$$aaa$$$a;`,
+    `select $aaa$;`,
+    `select $$$$; select $$$$;`,
+    `select $$ $;$ $$;`,
+    `select $a$ $;$ $a$;`,
+    `select $xx$$xx$;`,
+    `select $xx$xx$xx$;`,
+    `create function x() returns int as $$ select 1; select 2; $$ language sql;`,
+    `create function x() returns int as $end$ select 1; select 2; $end$ language sql;`,
 
+    // single-line comments
+    `-- abc; def`,
+    `select "xyz"; -- OK \n select "abc";`,
+    `select "xyz"; -- OK`,
+    `select "xyz"--OK`,
+    `--OK\n\nselect "xyz"`,
+    `select--OK\n1--OK\n+2; select x;`,
+
+    // multiline comments
+    `select/*/* ;;; */*/"xyz"; /* blah; */ select/***/"abc";/**/`,
+    `/* select "xyz"; */`,
+    `/**/`,
+    `/**/select'"--;/**/;--"'/**/--`,
+
+  ].forEach(check);
 }
 
+test();
