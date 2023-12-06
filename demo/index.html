@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <style>
+    body {
+      padding: 1em 2em;
+      font: 14px/1.5 'Monaco', 'Menlo', monospace;
+    }
+
+    textarea {
+      font: inherit;
+    }
+
+    ul {
+      white-space: pre-wrap;
+    }
+
+    .error {
+      color: #e20;
+    }
+  </style>
+</head>
+
+<body>
+  <textarea id="sql" rows="15" cols="80">select 1;
+select ";";
+select "select """a""";";
+select /* ; */ now();
+select e'Neon\'s ;';
+select e'continuation'
+  'Neon\'s ;';
+select $$;dollar string;$$;
+select $end$;dollar string;$end$;
+select id$end$id;
+-- etc.</textarea>
+  <ul id="out"></ul>
+  <p id="err"></p>
+  <script type="module">
+
+    import { parseSplits, nonEmptyStatements } from './index.js';
+    const
+      sqlEl = document.querySelector('#sql'),
+      outEl = document.querySelector('#out'),
+      elErr = document.querySelector('#err');
+
+    function go() {
+      const
+        { value } = sqlEl,
+        { positions, unterminated } = parseSplits(sqlEl.value, true),
+        statements = nonEmptyStatements(value, positions),
+        lis = statements.map(s => {
+          const li = document.createElement('li');
+          li.textContent = s;
+          return li;
+        })
+
+      if (unterminated !== undefined) lis[lis.length - 1].className = 'error';
+      outEl.replaceChildren(...lis);
+      elErr.textContent = unterminated === undefined ? '' : `(unterminated ${unterminated})`;
+    }
+
+    go();
+    sqlEl.addEventListener('input', go);
+
+  </script>
+</body>
+
+</html>

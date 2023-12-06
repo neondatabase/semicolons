@@ -3,11 +3,13 @@
   "version": "0.1.0",
   "description": "Split Postgres SQL queries on semicolons",
   "scripts": {
-    "test": "ts-node --files test.ts"
+    "test": "ts-node --files test.ts",
+    "demo": "esbuild index.ts --outdir=demo --serve --servedir=demo"
   },
   "author": "George MacKerron",
   "license": "MIT",
   "devDependencies": {
+    "esbuild": "^0.19.8",
     "pgsql-parser": "^13.5.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.3.2"
