@@ -49,7 +49,7 @@ export function parseSplits(sql: string, standardConformingStrings: boolean) {
         break;
 
       case 34 /* " */:  // an identifier e.g. "abc;""def"
-      case 39 /* ' */:  // a string e.g. 'ab;''cd', E'ab;\'cd', E'ab' 'c\'d', and if scs=no: 'ab;\'cd'
+      case 39 /* ' */:  // a string e.g. 'ab;''cd', E'ab;\'cd', E'ab'\n'c\'d', and if scs=no: 'ab;\'cd'
         const isSingleQuote = ch === 39;
         let backslashing = false;
         if (isSingleQuote === true) {  // double quotes never allow backslash quote-escaping
