@@ -81,7 +81,7 @@ function test() {
     `\nselect'a';select"a"\n`,
 
     // doubled quotes
-    `select "we ""love; quotes"; select 1`,
+    `select ";we ""love; quotes;"; select 1`,
     `select 'we ''love; quotes'; select 1`,
     `select e'we ''love; quotes'; select 1`,
     `select E'we ''love; ''q''uotes'; select 1`,
@@ -94,12 +94,12 @@ function test() {
     `select E'we \\'love; quotes'; select 1;`,
 
     // run-on escaped strings
-    `select  'x' 'we \\'love quotes';  select 1;`,  // should error (actually illegal, but also no reason to allow backslash escape,
+    `select  'x' ';we \\'love; quotes';  select 1;`,  // should error (actually illegal, but also no reason to allow backslash escape,
     `select e'x' 'we \\'love quotes';select 1`,  // should error (actually illegal, but we treat as non-run-on, thus ordinary string,
     `select E'x' 'we \\'love quotes' ;select 1`,  // should error, as above
     `select 'x'\n 'we \\'love quotes'; select 1`,  // should error (run-on ordinary string,
     `select e'x'\n 'we \\'love quotes'; select 1`,  // OK: run-on escape string
-    `select E'x'\n 'we \\'love quotes' ; select 1`,  // OK: ditto
+    `select E';x;'\n ';we \\'love; quotes;' ; select 1`,  // OK: ditto
 
     // $$ strings
     `select $$abc;def$$;`,
@@ -114,12 +114,13 @@ function test() {
     `select a$aaa$a;`,
     `select a$$aaa$$a;`,
     `select a$$$aaa$$$a;`,
-    `select $aaa$;`,
+    `select a$$a; select a$$a;`,
+    `select $aa$;`,
     `select $$$$; select $$$$;`,
-    `select $$ $;$ $$;`,
+    `select $$; $;$ ;$$;`,
     `select $a$ $;$ $a$;`,
     `select $xx$$xx$;`,
-    `select $xx$xx$xx$;`,
+    `select $xx$x;;;x$xx$;`,
     `create function x() returns int as $$ select 1; select 2; $$ language sql;`,
     `create function x() returns int as $end$ select 1; select 2; $end$ language sql;`,
 
@@ -136,6 +137,9 @@ function test() {
     `/* select "xyz"; */`,
     `/**/`,
     `/**/select'"--;/**/;--"'/**/--`,
+
+    // mixed
+    ` -- \n select/**/1\n, ';abc''def;g',\ne';abc\\'def;g;', ";x""y;z;", e';abc;'\n';abc\\'d;ef;', /*;/*;\n*/;*/ $ab$$;c\n;d;$$ab$, $$\n;a;b;$$, a$$a$$ --\n;select 1; --`,
 
   ].forEach(compareSplits);
 }
