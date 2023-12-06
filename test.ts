@@ -1,5 +1,3 @@
-#!/usr/bin/env ts-node --files
-
 import { parseSplits, nonEmptyStatements } from '.';
 import { parse } from 'pgsql-parser';
 

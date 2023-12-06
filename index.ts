@@ -32,15 +32,15 @@ export function parseSplits(sql: string, standardConformingStrings: boolean) {
     at = 0,
     ch: number;
 
-  outerloop: for (; ;) {
+  for (; ;) {
     // end of string? return
     if (at >= length) return { positions };
 
-    // jump to next character of interest
+    // jump to just after next character of interest
     at = indexAfter(sql, specialPattern, at);
     if (at === -1) return { positions };  // nothing else special, including semicolons, so we're done
 
-    const atSpecial = at - 1;  // backtrack to the special character (or last thereof)
+    const atSpecial = at - 1;  // backtrack to the special character (or last, if multiple)
     ch = sql.charCodeAt(atSpecial);
 
     switch (ch) {
@@ -49,7 +49,7 @@ export function parseSplits(sql: string, standardConformingStrings: boolean) {
         break;
 
       case 34 /* " */:  // an identifier e.g. "abc;""def"
-      case 39 /* ' */:  // a string e.g. 'ab;''cd', E'ab;\'cd', E'ab' 'c\'d', 'ab;\'cd' (scs=no)
+      case 39 /* ' */:  // a string e.g. 'ab;''cd', E'ab;\'cd', E'ab' 'c\'d', and if scs=no: 'ab;\'cd'
         const isSingleQuote = ch === 39;
         let backslashing = false;
         if (isSingleQuote === true) {  // double quotes never allow backslash quote-escaping
@@ -67,14 +67,31 @@ export function parseSplits(sql: string, standardConformingStrings: boolean) {
           const chNext = sql.charCodeAt(at);
           if (chNext === ch) at += 1;  // this is a doubled-escaped quote: "" or ''
           else {
-            if (isSingleQuote === false) continue outerloop;  // end of identifier
+            if (isSingleQuote === false) break;  // end of identifier
             // strings might continue after \s*\n\s* ...
             const continuingQuote = indexAfter(sql, whitespaceThenSingleQuote, at);
-            if (continuingQuote === -1) continue outerloop;
+            if (continuingQuote === -1) break;
             at = continuingQuote;
           }
         }
-      // `break;` not needed: can't reach here
+        break;
+
+      case 36 /* $ */:  // a dollar-quoted string e.g. $$ab$$, $ab$cd$ab$, but NOT ab$ab$cd$ab$ (which is just an identifier)
+        const
+          priorSql = sql.slice(0, atSpecial),
+          priorIdentifier = trailingIdentifier.test(priorSql);
+
+        if (priorIdentifier === true) break;  // $...$ strings can't immediately follow a keyword/identifier because $ is legal in those
+
+        const tagEnd = indexAfter(sql, dollarTag, at);
+        if (tagEnd === -1) break;  // not a valid dollar-quote opening
+
+        const tagStr = sql.slice(atSpecial, tagEnd);
+        at = sql.indexOf(tagStr, tagEnd);
+        if (at === -1) return { positions, unterminated: 'dollar-quoted string' };
+
+        at += tagStr.length;
+        break;
 
       case 45 /* - */:  // a single-line comment e.g. -- ab;cd
         const singleCommentStart = atSpecial - 1;
@@ -96,22 +113,6 @@ export function parseSplits(sql: string, standardConformingStrings: boolean) {
             break;
           }
         }
-        break;
-
-      case 36 /* $ */:  // a dollar-quoted string e.g. $$ab$$, $ab$cd$ab$, but NOT ab$ab$cd$ab$ (just an identifier)
-        const
-          priorSql = sql.slice(0, atSpecial),
-          priorIdentifier = trailingIdentifier.test(priorSql);
-
-        if (priorIdentifier === true) break;  // $...$ strings can't immediately follow a keyword/identifier because $ is legal in those
-
-        const tagEnd = indexAfter(sql, dollarTag, at);
-        if (tagEnd === -1) break;  // not a valid open dollar-quote
-
-        const tagStr = sql.slice(atSpecial, tagEnd);
-        at = sql.indexOf(tagStr, tagEnd);
-        if (at === -1) return { positions, unterminated: 'dollar-quoted string' };
-        at += tagStr.length;
         break;
 
       default:
@@ -146,7 +147,7 @@ export function splitStatements(sql: string, positions: (number | [number, numbe
     } else if (cutComments) {
       start = position[1];
 
-      const 
+      const
         noSpaceBefore = indexAfter(statement, whitespace, statement.length - 1) === -1,
         noSpaceAfter = indexAfter(sql, whitespace, start) === -1;
 
