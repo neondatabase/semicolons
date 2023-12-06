@@ -8,7 +8,8 @@ const
   newline = /[\s\S]*?\n/y,
   commentOpenOrClose = /[\s\S]*?([/][*]|[*][/])/y,
   trailingIdentifier = /(^|[^\p{L}\p{N}_])[\p{L}_][\p{L}\p{N}_$]*$/u,
-  dollarTag = /([\p{L}_][\p{L}\p{N}_]*)?[$]/uy;
+  dollarTag = /([\p{L}_][\p{L}\p{N}_]*)?[$]/uy,
+  whitespace = /\s/y;
 
 function indexAfter(str: string, re: RegExp, from: number) {
   re.lastIndex = from;
@@ -17,10 +18,10 @@ function indexAfter(str: string, re: RegExp, from: number) {
 }
 
 /**
- * Identifies semi-colons that separate SQL statments, and also SQL comments.
- * @param sql One or more SQL statements, separated by semi-colons
- * @param standardConformingStrings Postgres server setting: if `false`, quotes may be backslash-escaped in ordinary strings
- * @returns Positions of semicolons and comments, plus an indicator of an unterminated range type
+ * Identifies semi-colons that separate SQL statements, plus SQL comments.
+ * @param sql One or more SQL statements, separated by semi-colons.
+ * @param standardConformingStrings If `false`, quotes may be backslash-escaped in ordinary strings.
+ * @returns Positions of semicolons and comments, plus an indicator of an unterminated range type.
  */
 export function parseSplits(sql: string, standardConformingStrings: boolean) {
   const
@@ -73,13 +74,12 @@ export function parseSplits(sql: string, standardConformingStrings: boolean) {
             at = continuingQuote;
           }
         }
-        // `break;` not needed: can't reach here
+      // `break;` not needed: can't reach here
 
       case 45 /* - */:  // a single-line comment e.g. -- ab;cd
         const singleCommentStart = atSpecial - 1;
         at = indexAfter(sql, newline, at);
         if (at === -1) at = sql.length;  // single-line comment extends to EOF
-        else at -= 1;  // retain newline to avoid syntax errors
         positions.push([singleCommentStart, at]);
         break;
 
@@ -120,31 +120,54 @@ export function parseSplits(sql: string, standardConformingStrings: boolean) {
   }
 }
 
+/**
+ * Uses the output of `parseSplits` to split a string into separate SQL statements.
+ * @param sql One or more SQL statements, separated by semi-colons.
+ * @param positions The `positions` key of the `parseSplits` output.
+ * @param cutComments If `true`, remove comments from statements.
+ * @returns An array of SQL statements. Some may be empty, or contain only comments.
+ */
 export function splitStatements(sql: string, positions: (number | [number, number])[], cutComments: boolean) {
-  let 
+  const statements: string[] = [];
+  let
     start = 0,
     statement = '';
-    
-  const statements: string[] = [];
-  for (const position of positions.concat(sql.length)) {  // implicit semicolon at end
+
+  for (const position of positions.concat(sql.length)) {  // add implicit semicolon at end
     const isSemicolon = typeof position === 'number';
     statement += sql.slice(start, isSemicolon ? position : position[0]);
 
     if (isSemicolon) {
       statements.push(statement.trim());
       statement = '';
+
       start = position + 1;
 
+    } else if (cutComments) {
+      start = position[1];
+
+      const 
+        noSpaceBefore = indexAfter(statement, whitespace, statement.length - 1) === -1,
+        noSpaceAfter = indexAfter(sql, whitespace, start) === -1;
+
+      if (noSpaceBefore && noSpaceAfter) statement += ' ';  // comments can separate tokens, so add space if there's none on either side
+
     } else {
-      start = position[cutComments ? 1 : 0];
+      start = position[0];
     }
   }
-
   return statements;
 }
 
+/**
+ * Uses the output of `parseSplits` to split a string into separate SQL statements, including comments. 
+ * Returned statements are guaranteed non-empty (even if comments were to be removed).
+ * @param sql One or more SQL statements, separated by semi-colons.
+ * @param positions The `positions` key of the `parseSplits` output.
+ * @returns An array of non-empty SQL statements.
+ */
 export function nonEmptyStatements(sql: string, positions: (number | [number, number])[]) {
-  const 
+  const
     withComments = splitStatements(sql, positions, false),
     sansComments = splitStatements(sql, positions, true);
 
