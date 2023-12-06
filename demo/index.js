@@ -1,5 +1,5 @@
 "use strict";
-const specialPattern = /[\s\S]*?([;'"$]|--|\/\*)/y, doubleQuote = /[\s\S]*?"/y, singleQuote = /[\s\S]*?'/y, singleQuoteOrBackslash = /[\s\S]*?('|\\)/y, whitespaceThenSingleQuote = /\s*\n\s*'/y, newline = /[\s\S]*?\n/y, commentOpenOrClose = /[\s\S]*?([/][*]|[*][/])/y, trailingIdentifier = /(^|[^A-Za-z\u{80}-\u{10FFFF}_0-9$])[A-Za-z\u{80}-\u{10FFFF}_][A-Za-z\u{80}-\u{10FFFF}_0-9$]*$/u, dollarTag = /([\p{L}_][\p{L}\p{N}_]*)?[$]/uy, whitespace = /\s/y;
+const specialPattern = /[\s\S]*?([;'"$]|--|\/\*)/y, doubleQuote = /[\s\S]*?"/y, singleQuote = /[\s\S]*?'/y, singleQuoteOrBackslash = /[\s\S]*?('|\\)/y, whitespaceThenSingleQuote = /\s*\n\s*'/y, newline = /[\s\S]*?\n/y, commentOpenOrClose = /[\s\S]*?([/][*]|[*][/])/y, trailingIdentifier = /(^|[^A-Za-z\u{80}-\u{10FFFF}_0-9$])[A-Za-z\u{80}-\u{10FFFF}_][A-Za-z\u{80}-\u{10FFFF}_0-9$]*$/u, dollarTag = /([A-Za-z\u{80}-\u{10FFFF}_][A-Za-z\u{80}-\u{10FFFF}_0-9]*)?[$]/uy, whitespace = /\s/y;
 function indexAfter(str, re, from) {
   re.lastIndex = from;
   const matched = re.test(str);
