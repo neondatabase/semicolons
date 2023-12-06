@@ -7,8 +7,9 @@ const
   whitespaceThenSingleQuote = /\s*\n\s*'/y,
   newline = /[\s\S]*?\n/y,
   commentOpenOrClose = /[\s\S]*?([/][*]|[*][/])/y,
-  trailingIdentifier = /(^|[^\p{L}\p{N}_])[\p{L}_][\p{L}\p{N}_$]*$/u,
-  dollarTag = /([\p{L}_][\p{L}\p{N}_]*)?[$]/uy,
+  // *any* character above \x80 is legal in a Postgres identifier
+  trailingIdentifier = /(^|[^A-Za-z\u{80}-\u{10FFFF}_0-9$])[A-Za-z\u{80}-\u{10FFFF}_][A-Za-z\u{80}-\u{10FFFF}_0-9$]*$/u,
+  dollarTag = /([A-Za-z\u{80}-\u{10FFFF}_][A-Za-z\u{80}-\u{10FFFF}_0-9]*)?[$]/uy,
   whitespace = /\s/y;
 
 function indexAfter(str: string, re: RegExp, from: number) {

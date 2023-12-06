@@ -4,7 +4,7 @@
   "description": "Split Postgres SQL queries on semicolons",
   "scripts": {
     "test": "ts-node --files test.ts",
-    "demo": "esbuild index.ts --outdir=demo --serve --servedir=demo"
+    "build-demo": "esbuild index.ts --outdir=demo"
   },
   "author": "George MacKerron",
   "license": "MIT",

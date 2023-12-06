@@ -112,6 +112,8 @@ function test() {
     `select $1; select $a$; select $a$;`,
     `select"$1";select'$1';select $1;`,
     `select a$aaa$a;`,
+    `select 😀$aaa$😀; select 1;`,
+    `select $😀$end$id$end$;`,
     `select a$$aaa$$a;`,
     `select a$$$aaa$$$a;`,
     `select a$$a; select a$$a;`,

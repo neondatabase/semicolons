@@ -2,6 +2,7 @@
 <html>
 
 <head>
+  <meta charset="utf8">
   <style>
     body {
       padding: 1em 2em;
@@ -27,12 +28,15 @@
 select ";";
 select "select """a""";";
 select /* ; */ now();
-select e'Neon\'s ;';
+select 'Neon''s Postgres;';
+select e'Neon\'s Postgres;';
 select e'continuation'
-  'Neon\'s ;';
+  'Neon\'s Postgres;';
 select $$;dollar string;$$;
 select $end$;dollar string;$end$;
 select id$end$id;
+select 😀$end$id;
+/* just a comment */;
 -- etc.</textarea>
   <ul id="out"></ul>
   <p id="err"></p>
