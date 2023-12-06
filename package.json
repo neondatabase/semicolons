@@ -6,7 +6,7 @@
     "test": "ts-node --files test.ts"
   },
   "author": "George MacKerron",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "ts-node": "^10.9.1",
     "pgsql-parser": "^13.5.0"
