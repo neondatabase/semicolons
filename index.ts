@@ -8,8 +8,9 @@ const
   newline = /[\s\S]*?\n/y,
   commentOpenOrClose = /[\s\S]*?([/][*]|[*][/])/y,
   // *any* character above \x80 is legal in a Postgres identifier
-  trailingIdentifier = /(^|[^A-Za-z\u{80}-\u{10FFFF}_0-9$])[A-Za-z\u{80}-\u{10FFFF}_][A-Za-z\u{80}-\u{10FFFF}_0-9$]*$/u,
-  dollarTag = /([A-Za-z\u{80}-\u{10FFFF}_][A-Za-z\u{80}-\u{10FFFF}_0-9]*)?[$]/uy,
+  trailingIdentifier = /(^|[^A-Za-z\u0080-\uFFFF_0-9$])[A-Za-z\u0080-\uFFFF_][A-Za-z\u0080-\uFFFF_0-9$]*$/,
+  // a dollar-quoting tag is like an identifier, except no $ is allowed
+  dollarTag = /([A-Za-z\u0080-\uFFFF_][A-Za-z\u0080-\uFFFF_0-9]*)?[$]/y,
   whitespace = /\s/y;
 
 function indexAfter(str: string, re: RegExp, from: number) {
