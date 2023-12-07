@@ -5,7 +5,7 @@ const
   singleQuote = /[\s\S]*?'/y,
   singleQuoteOrBackslash = /[\s\S]*?('|\\)/y,
   whitespaceThenSingleQuote = /\s*\n\s*'/y,
-  newline = /[\s\S]*?\n/y,
+  newline = /.*?\n/y,
   commentOpenOrClose = /[\s\S]*?([/][*]|[*][/])/y,
   // *any* character above \x80 is legal in a Postgres identifier
   trailingIdentifier = /(^|[^A-Za-z\u0080-\uFFFF_0-9$])[A-Za-z\u0080-\uFFFF_][A-Za-z\u0080-\uFFFF_0-9$]*$/,
