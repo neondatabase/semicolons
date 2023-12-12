@@ -1,5 +1,5 @@
 {
-  "name": "semicolons",
+  "name": "postgres-semicolons",
   "version": "0.1.0",
   "description": "Split Postgres SQL queries on semicolons",
   "scripts": {
