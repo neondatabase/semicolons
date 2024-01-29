@@ -3,9 +3,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.nonEmptyStatements = exports.splitStatements = exports.parseSplits = void 0;
 var 
 // note: [\s\S] is an alternative to . with the 's' flag (which is not supported in older browsers)
-specialPattern = /[\s\S]*?([;'"$]|--|\/\*)/y, doubleQuote = /[\s\S]*?"/y, singleQuote = /[\s\S]*?'/y, singleQuoteOrBackslash = /[\s\S]*?('|\\)/y, whitespaceThenSingleQuote = /\s*\n\s*'/y, newline = /[\s\S]*?\n/y, commentOpenOrClose = /[\s\S]*?([/][*]|[*][/])/y, 
+specialPattern = /[\s\S]*?([;'"$]|--|\/\*)/y, doubleQuote = /[\s\S]*?"/y, singleQuote = /[\s\S]*?'/y, singleQuoteOrBackslash = /[\s\S]*?('|\\)/y, whitespaceThenSingleQuote = /\s*\n\s*'/y, newline = /.*?\n/y, commentOpenOrClose = /[\s\S]*?([/][*]|[*][/])/y, 
 // *any* character above \x80 is legal in a Postgres identifier
-trailingIdentifier = /(^|[^A-Za-z\u{80}-\u{10FFFF}_0-9$])[A-Za-z\u{80}-\u{10FFFF}_][A-Za-z\u{80}-\u{10FFFF}_0-9$]*$/u, dollarTag = /([A-Za-z\u{80}-\u{10FFFF}_][A-Za-z\u{80}-\u{10FFFF}_0-9]*)?[$]/uy, whitespace = /\s/y;
+trailingIdentifier = /(^|[^A-Za-z\u0080-\uFFFF_0-9$])[A-Za-z\u0080-\uFFFF_][A-Za-z\u0080-\uFFFF_0-9$]*$/, 
+// a dollar-quoting tag is like an identifier, except no $ is allowed
+dollarTag = /([A-Za-z\u0080-\uFFFF_][A-Za-z\u0080-\uFFFF_0-9]*)?[$]/y, whitespace = /\s/y;
 function indexAfter(str, re, from) {
     re.lastIndex = from;
     var matched = re.test(str);
