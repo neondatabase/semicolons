@@ -6,6 +6,8 @@ This isn't trivial, because semicolons may occur in double-quoted identifiers, o
 
 Sticky RegExps are used liberally.
 
+You can kick the tyres at: https://semicolons.pages.dev/
+
 ### Installation
 
 ```sh
