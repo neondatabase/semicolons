@@ -6,9 +6,7 @@ This isn't trivial, because semicolons may occur in double-quoted identifiers, o
 
 Sticky RegExps are used liberally.
 
-Used as part of Neon's SQL Editor, as discussed at https://neon.tech/blog/bringing-psqls-d-to-your-web-browser
-
-Kick the tyres there, or at https://semicolons.pages.dev/
+Developed for and [used by Neon's SQL Editor](https://neon.tech/blog/bringing-psqls-d-to-your-web-browser). Kick the tyres there or at https://semicolons.pages.dev/.
 
 ### Installation
 
